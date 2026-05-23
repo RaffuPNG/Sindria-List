@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import {
   BookOpen, Plus, Minus, Trash2, Check, Star, Settings,
   Upload, Download, Search, X, Clock, BookCheck, BookX,
-  User, Users, Copy, ChevronLeft
+  User, Users, Copy, ChevronLeft, Edit2
 } from "lucide-react";
 import { supabase } from "./supabase";
 
@@ -17,8 +17,6 @@ const db = {
         .single();
 
       if (error) {
-        // Supabase throws a specific error code if a row doesn't exist yet.
-        // We just catch it and return null like your local storage did!
         if (error.code === 'PGRST116') return null; 
         console.error("Error fetching from Supabase:", error);
         return null;
@@ -380,7 +378,7 @@ function EmptyState({ tab }) {
   const MAP = {
     reading: { Icon: BookOpen,  title: "Nothing here yet!",    body: "Tap + to start tracking your manga." },
     read:    { Icon: BookCheck, title: "No completed titles.",  body: "Finish a manga to move it here." },
-    dropped: { Icon: BookX,     title: "No dropped titles.",    body: "Hopefully you won't need this tab!" },
+    dropped: { Icon: BookX,      title: "No dropped titles.",   body: "Hopefully you won't need this tab!" },
   };
   const { Icon, title, body } = MAP[tab] || MAP.reading;
   return (
@@ -397,7 +395,7 @@ function EmptyState({ tab }) {
 }
 
 /* ─────────────────────────── MangaCard ──────────────────────────────────── */
-function MangaCard({ item, onUpdate, onDelete, onMoveRead, animDelay }) {
+function MangaCard({ item, onUpdate, onDelete, onEdit, onMoveRead, animDelay }) {
   const [delMode, setDelMode] = useState(false);
   const [flash, setFlash] = useState(null);
   const delRef = useRef(null);
@@ -471,15 +469,21 @@ function MangaCard({ item, onUpdate, onDelete, onMoveRead, animDelay }) {
               </span>
             )}
           </div>
-          <button onClick={onDel} style={iconBtn({
-            minWidth: 30, minHeight: 30, flexShrink: 0,
-            background: delMode ? "rgba(239,68,68,0.14)" : "transparent",
-            color: delMode ? "#f87171" : "#52525b",
-            transform: delMode ? "scale(1.1)" : "scale(1)"
-          })} onMouseEnter={e => !delMode && (e.currentTarget.style.color = "#f87171")}
-             onMouseLeave={e => !delMode && (e.currentTarget.style.color = "#52525b")}>
-            {delMode ? <Check size={13} /> : <Trash2 size={13} />}
-          </button>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={onEdit} style={iconBtn({ minWidth: 30, minHeight: 30, background: "transparent", color: "#52525b" })}
+              onMouseEnter={e => e.currentTarget.style.color = "#a1a1aa"} onMouseLeave={e => e.currentTarget.style.color = "#52525b"}>
+              <Edit2 size={13} />
+            </button>
+            <button onClick={onDel} style={iconBtn({
+              minWidth: 30, minHeight: 30, flexShrink: 0,
+              background: delMode ? "rgba(239,68,68,0.14)" : "transparent",
+              color: delMode ? "#f87171" : "#52525b",
+              transform: delMode ? "scale(1.1)" : "scale(1)"
+            })} onMouseEnter={e => !delMode && (e.currentTarget.style.color = "#f87171")}
+               onMouseLeave={e => !delMode && (e.currentTarget.style.color = "#52525b")}>
+              {delMode ? <Check size={13} /> : <Trash2 size={13} />}
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, gap: 6 }}>
@@ -992,7 +996,8 @@ function SindriaListApp({ profileSlug, profileName, onSwitchProfile, onDeletePro
               ? <EmptyState tab={tab} />
               : list.map((item, i) => (
                   <MangaCard key={item.id} item={item} animDelay={i * 35}
-                    onUpdate={updateEntry} onDelete={deleteEntry} onMoveRead={moveToRead} />
+                    onUpdate={updateEntry} onDelete={deleteEntry} onMoveRead={moveToRead}
+                    onEdit={() => setModal({ edit: item })} />
                 ))
           }
         </div>
